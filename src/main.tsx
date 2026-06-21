@@ -15,6 +15,8 @@ import {
   Gauge,
   GitBranch,
   KeyRound,
+  Languages,
+  ListChecks,
   LockKeyhole,
   Plus,
   Radar,
@@ -23,6 +25,7 @@ import {
   ShieldAlert,
   ShieldCheck,
   Sparkles,
+  Target,
   Trash2,
   Workflow,
   Zap,
@@ -33,6 +36,7 @@ type AccessLevel = "read" | "write" | "admin";
 type DataClass = "public" | "internal" | "confidential" | "restricted";
 type ApprovalMode = "none" | "sampled" | "before-write" | "every-action";
 type AuditLevel = "none" | "basic" | "structured" | "immutable";
+type Language = "en" | "zh";
 
 type Project = {
   id: string;
@@ -66,7 +70,17 @@ type Recommendation = {
   severity: "critical" | "warning" | "ready";
 };
 
+type RiskFactor = {
+  id: string;
+  label: string;
+  detail: string;
+  value: number;
+  impact: number;
+  tone: "critical" | "warning" | "ready";
+};
+
 const STORAGE_KEY = "agentguard-lab-projects";
+const LANGUAGE_KEY = "agentguard-lab-language";
 
 const dataClassWeight: Record<DataClass, number> = {
   public: 4,
@@ -94,6 +108,241 @@ const auditWeight: Record<AuditLevel, number> = {
   structured: 5,
   immutable: 0,
 };
+
+const copy = {
+  en: {
+    appName: "AgentGuard Lab",
+    heroTitle: "Decide if an AI agent is ready to pilot.",
+    heroBody:
+      "Turn a vague agent idea into a launch decision. Define what it can do, what it can touch, who approves actions, and which controls are missing.",
+    purposeLabel: "Clear outcome",
+    purposeTitle: "From idea to launch decision",
+    purposeItems: [
+      "Can this agent enter a limited pilot?",
+      "Which risks block launch today?",
+      "What controls must be added next?",
+    ],
+    newWorkflow: "New workflow",
+    exportReport: "Export report",
+    languageToggle: "中文",
+    languageLabel: "Language",
+    workflows: "Workflows",
+    savedLocally: "saved locally",
+    addWorkflow: "Add workflow",
+    fastStarts: "Fast starts",
+    resetSampleData: "Reset sample data",
+    controlSurface: "Control surface",
+    workflowProfile: "Workflow profile",
+    report: "Report",
+    delete: "Delete",
+    name: "Name",
+    owner: "Owner",
+    mission: "Mission",
+    autonomy: "Autonomy",
+    autonomyHint: "How much can it decide without a person?",
+    externalActions: "External actions",
+    externalActionsHint: "Systems it can call or change.",
+    userImpact: "User impact",
+    userImpactHint: "How visible or consequential mistakes are.",
+    injectionExposure: "Injection exposure",
+    injectionExposureHint: "How much untrusted content it reads.",
+    dataClass: "Data class",
+    toolAccess: "Tool access",
+    approval: "Approval",
+    auditTrail: "Audit trail",
+    killSwitch: "Kill switch",
+    killSwitchDescription: "Immediate token revocation and run pause.",
+    manualFallback: "Manual fallback",
+    manualFallbackDescription: "A documented path if the agent is disabled.",
+    retentionWindow: "Retention window",
+    days: "days",
+    launchReadiness: "Launch readiness",
+    riskDrivers: "Risk drivers",
+    whyThisScore: "Why this score",
+    recommendations: "Recommendations",
+    nextControls: "Next controls",
+    reviewNotes: "Review notes",
+    addControlNote: "Add a control note",
+    on: "On",
+    off: "Off",
+    impact: "impact",
+    newProjectName: "New Agent Workflow",
+    newProjectMission: "Describe the job this agent will perform.",
+    productOwner: "Product",
+    reportTitle: "Launch Review",
+    reportMission: "Mission",
+    reportControls: "Controls",
+    reportRecommendations: "Recommendations",
+    reportNotes: "Notes",
+    none: "None",
+    labels: {
+      public: "public",
+      internal: "internal",
+      confidential: "confidential",
+      restricted: "restricted",
+      read: "read",
+      write: "write",
+      admin: "admin",
+      none: "none",
+      sampled: "sampled",
+      "before-write": "before-write",
+      "every-action": "every-action",
+      basic: "basic",
+      structured: "structured",
+      immutable: "immutable",
+    },
+    bands: {
+      critical: "Launch Blocked",
+      warning: "Needs Controls",
+      ready: "Launch Ready",
+    },
+    factorDetails: {
+      autonomy: "Decision freedom",
+      data: "Sensitivity of data touched",
+      access: "Permission level",
+      approval: "Human review strength",
+      audit: "Traceability depth",
+      actions: "External system reach",
+      injection: "Untrusted input exposure",
+    },
+    recommendationsText: {
+      humanGateTitle: "Put a human gate before external writes",
+      humanGateBody:
+        "Write-capable agents should require explicit approval before changing customer, finance, or production systems.",
+      retentionTitle: "Shorten retention for restricted data",
+      retentionBody:
+        "Keep sensitive context windows small and expire run artifacts quickly unless a legal hold requires otherwise.",
+      hostileInputTitle: "Treat incoming content as hostile input",
+      hostileInputBody:
+        "Add source isolation, instruction hierarchy checks, and allowlisted tool calls for untrusted documents or messages.",
+      killSwitchTitle: "Add a kill switch",
+      killSwitchBody:
+        "Teams need an immediate stop control that revokes tool tokens and pauses scheduled runs without a deploy.",
+      auditTitle: "Upgrade the audit trail",
+      auditBody:
+        "Record model input summaries, tool calls, approvals, and final actions in a structured event stream.",
+      pilotTitle: "Ready for a constrained pilot",
+      pilotBody:
+        "Run with a narrow user cohort, compare agent outcomes against manual baselines, and review incidents weekly.",
+    },
+  },
+  zh: {
+    appName: "AgentGuard Lab",
+    heroTitle: "判断 AI Agent 能不能进入试点。",
+    heroBody:
+      "把模糊的 Agent 想法变成清晰的上线判断：它能做什么、能碰什么数据、谁来审批、还缺哪些控制措施。",
+    purposeLabel: "明确目标",
+    purposeTitle: "从想法到上线决策",
+    purposeItems: [
+      "这个 Agent 现在能不能小范围试点？",
+      "今天阻塞上线的风险是什么？",
+      "下一步必须补哪些控制措施？",
+    ],
+    newWorkflow: "新建工作流",
+    exportReport: "导出报告",
+    languageToggle: "English",
+    languageLabel: "语言",
+    workflows: "工作流",
+    savedLocally: "个本地保存",
+    addWorkflow: "添加工作流",
+    fastStarts: "快速模板",
+    resetSampleData: "重置示例数据",
+    controlSurface: "控制台",
+    workflowProfile: "工作流画像",
+    report: "报告",
+    delete: "删除",
+    name: "名称",
+    owner: "负责人",
+    mission: "任务目标",
+    autonomy: "自主程度",
+    autonomyHint: "它能在多大程度上自己做决定？",
+    externalActions: "外部动作",
+    externalActionsHint: "它能调用或改变多少外部系统？",
+    userImpact: "用户影响",
+    userImpactHint: "出错后对用户或业务的影响程度。",
+    injectionExposure: "注入暴露",
+    injectionExposureHint: "它会读取多少不可信内容。",
+    dataClass: "数据等级",
+    toolAccess: "工具权限",
+    approval: "审批方式",
+    auditTrail: "审计日志",
+    killSwitch: "紧急停止",
+    killSwitchDescription: "立即撤销工具令牌并暂停运行。",
+    manualFallback: "人工兜底",
+    manualFallbackDescription: "Agent 停用时可切回人工流程。",
+    retentionWindow: "保留周期",
+    days: "天",
+    launchReadiness: "上线准备度",
+    riskDrivers: "风险来源",
+    whyThisScore: "分数原因",
+    recommendations: "治理建议",
+    nextControls: "下一步控制",
+    reviewNotes: "评审备注",
+    addControlNote: "添加控制备注",
+    on: "开",
+    off: "关",
+    impact: "影响",
+    newProjectName: "新的 Agent 工作流",
+    newProjectMission: "描述这个 Agent 要完成的任务。",
+    productOwner: "产品",
+    reportTitle: "上线评审",
+    reportMission: "任务目标",
+    reportControls: "控制措施",
+    reportRecommendations: "治理建议",
+    reportNotes: "备注",
+    none: "无",
+    labels: {
+      public: "公开",
+      internal: "内部",
+      confidential: "机密",
+      restricted: "受限",
+      read: "读取",
+      write: "写入",
+      admin: "管理员",
+      none: "无",
+      sampled: "抽样审批",
+      "before-write": "写入前审批",
+      "every-action": "每次操作审批",
+      basic: "基础",
+      structured: "结构化",
+      immutable: "不可变",
+    },
+    bands: {
+      critical: "阻塞上线",
+      warning: "需要补控制",
+      ready: "可以试点",
+    },
+    factorDetails: {
+      autonomy: "自主决策空间",
+      data: "接触数据敏感度",
+      access: "工具权限级别",
+      approval: "人工审核强度",
+      audit: "可追溯程度",
+      actions: "外部系统触达",
+      injection: "不可信输入暴露",
+    },
+    recommendationsText: {
+      humanGateTitle: "外部写入前加入人工审批",
+      humanGateBody:
+        "具备写入能力的 Agent 在改动客户、财务或生产系统前，应要求明确审批。",
+      retentionTitle: "缩短受限数据保留周期",
+      retentionBody:
+        "敏感上下文和运行记录应尽快过期，除非存在明确的合规或法律保留要求。",
+      hostileInputTitle: "把外来内容视为不可信输入",
+      hostileInputBody:
+        "对文档和消息增加来源隔离、指令层级校验，并限制可调用工具范围。",
+      killSwitchTitle: "加入紧急停止能力",
+      killSwitchBody:
+        "团队需要无需发版就能立即撤销工具令牌、暂停定时任务的停止控制。",
+      auditTitle: "升级审计日志",
+      auditBody:
+        "用结构化事件记录模型输入摘要、工具调用、审批记录和最终动作。",
+      pilotTitle: "适合受限试点",
+      pilotBody:
+        "先面向小范围用户运行，对比人工基线，并每周复盘异常和事件。",
+    },
+  },
+} as const;
 
 const createProject = (overrides: Partial<Project> = {}): Project => ({
   id: crypto.randomUUID(),
@@ -191,64 +440,153 @@ const calculateRisk = (project: Project) => {
   return Math.round(clamp(raw));
 };
 
-const getRiskBand = (score: number) => {
-  if (score >= 75) return { label: "Launch Blocked", tone: "critical" };
-  if (score >= 50) return { label: "Needs Controls", tone: "warning" };
-  return { label: "Launch Ready", tone: "ready" };
+const getRiskBand = (score: number, language: Language) => {
+  if (score >= 75) return { label: copy[language].bands.critical, tone: "critical" };
+  if (score >= 50) return { label: copy[language].bands.warning, tone: "warning" };
+  return { label: copy[language].bands.ready, tone: "ready" };
 };
 
-const buildRecommendations = (project: Project, score: number): Recommendation[] => {
+const buildRecommendations = (
+  project: Project,
+  score: number,
+  language: Language,
+): Recommendation[] => {
   const recommendations: Recommendation[] = [];
+  const text = copy[language].recommendationsText;
 
   if (project.toolAccess !== "read" && project.approvalMode === "none") {
     recommendations.push({
-      title: "Put a human gate before external writes",
-      body: "Write-capable agents should require explicit approval before changing customer, finance, or production systems.",
+      title: text.humanGateTitle,
+      body: text.humanGateBody,
       severity: "critical",
     });
   }
 
   if (project.dataClass === "restricted" && project.retentionDays > 14) {
     recommendations.push({
-      title: "Shorten retention for restricted data",
-      body: "Keep sensitive context windows small and expire run artifacts quickly unless a legal hold requires otherwise.",
+      title: text.retentionTitle,
+      body: text.retentionBody,
       severity: "warning",
     });
   }
 
   if (project.promptInjectionExposure > 55) {
     recommendations.push({
-      title: "Treat incoming content as hostile input",
-      body: "Add source isolation, instruction hierarchy checks, and allowlisted tool calls for untrusted documents or messages.",
+      title: text.hostileInputTitle,
+      body: text.hostileInputBody,
       severity: "warning",
     });
   }
 
   if (!project.killSwitch) {
     recommendations.push({
-      title: "Add a kill switch",
-      body: "Teams need an immediate stop control that revokes tool tokens and pauses scheduled runs without a deploy.",
+      title: text.killSwitchTitle,
+      body: text.killSwitchBody,
       severity: "critical",
     });
   }
 
   if (project.auditLevel === "none" || project.auditLevel === "basic") {
     recommendations.push({
-      title: "Upgrade the audit trail",
-      body: "Record model input summaries, tool calls, approvals, and final actions in a structured event stream.",
+      title: text.auditTitle,
+      body: text.auditBody,
       severity: "warning",
     });
   }
 
   if (score < 50) {
     recommendations.push({
-      title: "Ready for a constrained pilot",
-      body: "Run with a narrow user cohort, compare agent outcomes against manual baselines, and review incidents weekly.",
+      title: text.pilotTitle,
+      body: text.pilotBody,
       severity: "ready",
     });
   }
 
   return recommendations.slice(0, 4);
+};
+
+const buildRiskFactors = (project: Project, language: Language): RiskFactor[] => {
+  const labels = copy[language].factorDetails;
+  const factors: RiskFactor[] = [
+    {
+      id: "autonomy",
+      label: copy[language].autonomy,
+      detail: labels.autonomy,
+      value: project.autonomy,
+      impact: Math.round(project.autonomy * 0.18),
+      tone: project.autonomy > 70 ? "critical" : project.autonomy > 45 ? "warning" : "ready",
+    },
+    {
+      id: "data",
+      label: copy[language].dataClass,
+      detail: labels.data,
+      value: dataClassWeight[project.dataClass],
+      impact: dataClassWeight[project.dataClass],
+      tone:
+        project.dataClass === "restricted"
+          ? "critical"
+          : project.dataClass === "confidential"
+            ? "warning"
+            : "ready",
+    },
+    {
+      id: "access",
+      label: copy[language].toolAccess,
+      detail: labels.access,
+      value: toolAccessWeight[project.toolAccess],
+      impact: toolAccessWeight[project.toolAccess],
+      tone: project.toolAccess === "admin" ? "critical" : project.toolAccess === "write" ? "warning" : "ready",
+    },
+    {
+      id: "approval",
+      label: copy[language].approval,
+      detail: labels.approval,
+      value: approvalWeight[project.approvalMode],
+      impact: approvalWeight[project.approvalMode],
+      tone:
+        project.approvalMode === "none"
+          ? "critical"
+          : project.approvalMode === "sampled"
+            ? "warning"
+            : "ready",
+    },
+    {
+      id: "audit",
+      label: copy[language].auditTrail,
+      detail: labels.audit,
+      value: auditWeight[project.auditLevel],
+      impact: auditWeight[project.auditLevel],
+      tone:
+        project.auditLevel === "none"
+          ? "critical"
+          : project.auditLevel === "basic"
+            ? "warning"
+            : "ready",
+    },
+    {
+      id: "actions",
+      label: copy[language].externalActions,
+      detail: labels.actions,
+      value: project.externalActions,
+      impact: Math.round(project.externalActions * 2.6),
+      tone: project.externalActions > 8 ? "critical" : project.externalActions > 3 ? "warning" : "ready",
+    },
+    {
+      id: "injection",
+      label: copy[language].injectionExposure,
+      detail: labels.injection,
+      value: project.promptInjectionExposure,
+      impact: Math.round(project.promptInjectionExposure * 0.18),
+      tone:
+        project.promptInjectionExposure > 70
+          ? "critical"
+          : project.promptInjectionExposure > 45
+            ? "warning"
+            : "ready",
+    },
+  ];
+
+  return factors.sort((left, right) => right.impact - left.impact).slice(0, 5);
 };
 
 const loadProjects = (): Project[] => {
@@ -266,15 +604,28 @@ const saveProjects = (projects: Project[]) => {
   localStorage.setItem(STORAGE_KEY, JSON.stringify(projects));
 };
 
+const loadLanguage = (): Language => {
+  const stored = localStorage.getItem(LANGUAGE_KEY);
+  if (stored === "en" || stored === "zh") return stored;
+  return navigator.language.toLowerCase().startsWith("zh") ? "zh" : "en";
+};
+
+const saveLanguage = (language: Language) => {
+  localStorage.setItem(LANGUAGE_KEY, language);
+};
+
 function App() {
   const [projects, setProjects] = useStoredProjects();
+  const [language, setLanguageState] = useState<Language>(loadLanguage);
   const [activeId, setActiveId] = useState(projects[0]?.id ?? templates[0].project.id);
   const [noteDraft, setNoteDraft] = useState("");
 
+  const t = copy[language];
   const activeProject = projects.find((project) => project.id === activeId) ?? projects[0];
   const score = calculateRisk(activeProject);
-  const riskBand = getRiskBand(score);
-  const recommendations = buildRecommendations(activeProject, score);
+  const riskBand = getRiskBand(score, language);
+  const recommendations = buildRecommendations(activeProject, score, language);
+  const riskFactors = buildRiskFactors(activeProject, language);
   const readiness = Math.round(
     clamp(
       100 -
@@ -283,6 +634,11 @@ function App() {
         (activeProject.approvalMode === "every-action" ? 6 : 0),
     ),
   );
+
+  const setLanguage = (nextLanguage: Language) => {
+    setLanguageState(nextLanguage);
+    saveLanguage(nextLanguage);
+  };
 
   const updateProject = <K extends keyof Project>(key: K, value: Project[K]) => {
     setProjects((current) =>
@@ -301,9 +657,9 @@ function App() {
   const addBlankProject = () => {
     const project = createProject({
       id: crypto.randomUUID(),
-      name: "New Agent Workflow",
-      mission: "Describe the job this agent will perform.",
-      owner: "Product",
+      name: t.newProjectName,
+      mission: t.newProjectMission,
+      owner: t.productOwner,
       notes: [],
     });
     setProjects((current) => [project, ...current]);
@@ -338,28 +694,28 @@ function App() {
 
   const exportReport = () => {
     const report = [
-      `# ${activeProject.name} Launch Review`,
+      `# ${activeProject.name} ${t.reportTitle}`,
       "",
-      `Owner: ${activeProject.owner}`,
-      `Risk score: ${score}/100 (${riskBand.label})`,
-      `Readiness: ${readiness}%`,
+      `${t.owner}: ${activeProject.owner}`,
+      `${t.riskDrivers}: ${score}/100 (${riskBand.label})`,
+      `${t.launchReadiness}: ${readiness}%`,
       "",
-      "## Mission",
+      `## ${t.reportMission}`,
       activeProject.mission,
       "",
-      "## Controls",
-      `- Data class: ${activeProject.dataClass}`,
-      `- Tool access: ${activeProject.toolAccess}`,
-      `- Approval mode: ${activeProject.approvalMode}`,
-      `- Audit level: ${activeProject.auditLevel}`,
-      `- Kill switch: ${activeProject.killSwitch ? "yes" : "no"}`,
-      `- Manual fallback: ${activeProject.fallbackReady ? "yes" : "no"}`,
+      `## ${t.reportControls}`,
+      `- ${t.dataClass}: ${t.labels[activeProject.dataClass]}`,
+      `- ${t.toolAccess}: ${t.labels[activeProject.toolAccess]}`,
+      `- ${t.approval}: ${t.labels[activeProject.approvalMode]}`,
+      `- ${t.auditTrail}: ${t.labels[activeProject.auditLevel]}`,
+      `- ${t.killSwitch}: ${activeProject.killSwitch ? t.on : t.off}`,
+      `- ${t.manualFallback}: ${activeProject.fallbackReady ? t.on : t.off}`,
       "",
-      "## Recommendations",
+      `## ${t.reportRecommendations}`,
       ...recommendations.map((item) => `- ${item.title}: ${item.body}`),
       "",
-      "## Notes",
-      ...(activeProject.notes.length ? activeProject.notes.map((note) => `- ${note}`) : ["- None"]),
+      `## ${t.reportNotes}`,
+      ...(activeProject.notes.length ? activeProject.notes.map((note) => `- ${note}`) : [`- ${t.none}`]),
     ].join("\n");
 
     const blob = new Blob([report], { type: "text/markdown" });
@@ -379,26 +735,44 @@ function App() {
             <ShieldCheck size={24} />
           </div>
           <div>
-            <p className="eyebrow">AgentGuard Lab</p>
-            <h1>Model AI agent risk before launch.</h1>
+            <p className="eyebrow">{t.appName}</p>
+            <h1>{t.heroTitle}</h1>
           </div>
+          <button
+            className="language-button"
+            onClick={() => setLanguage(language === "en" ? "zh" : "en")}
+            title={t.languageLabel}
+          >
+            <Languages size={17} />
+            {t.languageToggle}
+          </button>
         </div>
 
         <div className="hero-grid">
           <div className="summary-copy">
-            <p>
-              A local-first readiness console for teams turning AI agents into production
-              workflows. Map autonomy, data exposure, tool access, approvals, and audit depth
-              before the first pilot goes live.
-            </p>
+            <p>{t.heroBody}</p>
+            <div className="purpose-card">
+              <div>
+                <p className="eyebrow">{t.purposeLabel}</p>
+                <strong>{t.purposeTitle}</strong>
+              </div>
+              <ul>
+                {t.purposeItems.map((item) => (
+                  <li key={item}>
+                    <Target size={16} />
+                    <span>{item}</span>
+                  </li>
+                ))}
+              </ul>
+            </div>
             <div className="hero-actions">
               <button className="primary-action" onClick={addBlankProject}>
                 <Plus size={18} />
-                New workflow
+                {t.newWorkflow}
               </button>
               <button className="ghost-action" onClick={exportReport}>
                 <ArrowDownToLine size={18} />
-                Export report
+                {t.exportReport}
               </button>
             </div>
           </div>
@@ -421,10 +795,12 @@ function App() {
         <aside className="rail" aria-label="Saved workflows">
           <div className="rail-head">
             <div>
-              <p className="eyebrow">Workflows</p>
-              <strong>{projects.length} saved locally</strong>
+              <p className="eyebrow">{t.workflows}</p>
+              <strong>
+                {projects.length} {t.savedLocally}
+              </strong>
             </div>
-            <button className="icon-button" onClick={addBlankProject} title="Add workflow">
+            <button className="icon-button" onClick={addBlankProject} title={t.addWorkflow}>
               <Plus size={18} />
             </button>
           </div>
@@ -452,7 +828,7 @@ function App() {
           </div>
 
           <div className="template-stack">
-            <p className="eyebrow">Fast starts</p>
+            <p className="eyebrow">{t.fastStarts}</p>
             {templates.map((template) => (
               <button
                 className="template-button"
@@ -470,45 +846,45 @@ function App() {
 
           <button className="reset-button" onClick={resetProjects}>
             <RotateCcw size={16} />
-            Reset sample data
+            {t.resetSampleData}
           </button>
         </aside>
 
         <section className="editor" aria-label="Workflow editor">
           <div className="section-heading">
             <div>
-              <p className="eyebrow">Control surface</p>
-              <h2>Workflow profile</h2>
+              <p className="eyebrow">{t.controlSurface}</p>
+              <h2>{t.workflowProfile}</h2>
             </div>
             <div className="button-group">
               <button className="compact-button" onClick={exportReport}>
                 <FileText size={16} />
-                Report
+                {t.report}
               </button>
               <button className="compact-button danger" onClick={deleteProject} disabled={projects.length === 1}>
                 <Trash2 size={16} />
-                Delete
+                {t.delete}
               </button>
             </div>
           </div>
 
           <div className="form-grid">
             <label className="field span-two">
-              <span>Name</span>
+              <span>{t.name}</span>
               <input
                 value={activeProject.name}
                 onChange={(event) => updateProject("name", event.target.value)}
               />
             </label>
             <label className="field">
-              <span>Owner</span>
+              <span>{t.owner}</span>
               <input
                 value={activeProject.owner}
                 onChange={(event) => updateProject("owner", event.target.value)}
               />
             </label>
             <label className="field span-three">
-              <span>Mission</span>
+              <span>{t.mission}</span>
               <textarea
                 value={activeProject.mission}
                 onChange={(event) => updateProject("mission", event.target.value)}
@@ -519,26 +895,30 @@ function App() {
           <div className="control-grid">
             <MetricSlider
               icon={<Zap size={18} />}
-              label="Autonomy"
+              label={t.autonomy}
+              hint={t.autonomyHint}
               value={activeProject.autonomy}
               onChange={(value) => updateProject("autonomy", value)}
             />
             <MetricSlider
               icon={<GitBranch size={18} />}
-              label="External actions"
+              label={t.externalActions}
+              hint={t.externalActionsHint}
               value={activeProject.externalActions}
               max={12}
               onChange={(value) => updateProject("externalActions", value)}
             />
             <MetricSlider
               icon={<Fingerprint size={18} />}
-              label="User impact"
+              label={t.userImpact}
+              hint={t.userImpactHint}
               value={activeProject.userImpact}
               onChange={(value) => updateProject("userImpact", value)}
             />
             <MetricSlider
               icon={<ShieldAlert size={18} />}
-              label="Injection exposure"
+              label={t.injectionExposure}
+              hint={t.injectionExposureHint}
               value={activeProject.promptInjectionExposure}
               onChange={(value) => updateProject("promptInjectionExposure", value)}
             />
@@ -547,30 +927,42 @@ function App() {
           <div className="choice-grid">
             <SelectField
               icon={<Database size={18} />}
-              label="Data class"
+              label={t.dataClass}
               value={activeProject.dataClass}
-              options={["public", "internal", "confidential", "restricted"]}
+              options={["public", "internal", "confidential", "restricted"].map((value) => ({
+                value,
+                label: t.labels[value as DataClass],
+              }))}
               onChange={(value) => updateProject("dataClass", value as DataClass)}
             />
             <SelectField
               icon={<KeyRound size={18} />}
-              label="Tool access"
+              label={t.toolAccess}
               value={activeProject.toolAccess}
-              options={["read", "write", "admin"]}
+              options={["read", "write", "admin"].map((value) => ({
+                value,
+                label: t.labels[value as AccessLevel],
+              }))}
               onChange={(value) => updateProject("toolAccess", value as AccessLevel)}
             />
             <SelectField
               icon={<ClipboardCheck size={18} />}
-              label="Approval"
+              label={t.approval}
               value={activeProject.approvalMode}
-              options={["none", "sampled", "before-write", "every-action"]}
+              options={["none", "sampled", "before-write", "every-action"].map((value) => ({
+                value,
+                label: t.labels[value as ApprovalMode],
+              }))}
               onChange={(value) => updateProject("approvalMode", value as ApprovalMode)}
             />
             <SelectField
               icon={<Archive size={18} />}
-              label="Audit trail"
+              label={t.auditTrail}
               value={activeProject.auditLevel}
-              options={["none", "basic", "structured", "immutable"]}
+              options={["none", "basic", "structured", "immutable"].map((value) => ({
+                value,
+                label: t.labels[value as AuditLevel],
+              }))}
               onChange={(value) => updateProject("auditLevel", value as AuditLevel)}
             />
           </div>
@@ -578,22 +970,26 @@ function App() {
           <div className="switch-grid">
             <ToggleCard
               icon={<LockKeyhole size={20} />}
-              label="Kill switch"
-              description="Immediate token revocation and run pause."
+              label={t.killSwitch}
+              description={t.killSwitchDescription}
               checked={activeProject.killSwitch}
               onChange={(value) => updateProject("killSwitch", value)}
+              onLabel={t.on}
+              offLabel={t.off}
             />
             <ToggleCard
               icon={<Workflow size={20} />}
-              label="Manual fallback"
-              description="A documented path if the agent is disabled."
+              label={t.manualFallback}
+              description={t.manualFallbackDescription}
               checked={activeProject.fallbackReady}
               onChange={(value) => updateProject("fallbackReady", value)}
+              onLabel={t.on}
+              offLabel={t.off}
             />
             <label className="retention-card">
               <span>
                 <Archive size={18} />
-                Retention window
+                {t.retentionWindow}
               </span>
               <input
                 type="number"
@@ -604,7 +1000,7 @@ function App() {
                   updateProject("retentionDays", Number(event.target.value))
                 }
               />
-              <small>days</small>
+              <small>{t.days}</small>
             </label>
           </div>
         </section>
@@ -613,7 +1009,7 @@ function App() {
           <div className="score-block">
             <div className="score-header">
               <Gauge size={20} />
-              <span>Launch readiness</span>
+              <span>{t.launchReadiness}</span>
             </div>
             <strong>{readiness}%</strong>
             <div className="meter">
@@ -621,18 +1017,43 @@ function App() {
             </div>
           </div>
 
+          <div className="drivers-panel">
+            <div className="section-heading compact">
+              <div>
+                <p className="eyebrow">{t.riskDrivers}</p>
+                <h2>{t.whyThisScore}</h2>
+              </div>
+              <ListChecks size={20} />
+            </div>
+            <div className="driver-list">
+              {riskFactors.map((factor) => (
+                <div className={`driver ${factor.tone}`} key={factor.id}>
+                  <div>
+                    <strong>{factor.label}</strong>
+                    <small>
+                      {factor.detail} · {t.impact} +{factor.impact}
+                    </small>
+                  </div>
+                  <span className="driver-track">
+                    <i style={{ width: `${clamp(factor.impact * 3)}%` }} />
+                  </span>
+                </div>
+              ))}
+            </div>
+          </div>
+
           <div className="signal-grid">
-            <Signal icon={<Database size={18} />} label="Data" value={activeProject.dataClass} />
-            <Signal icon={<KeyRound size={18} />} label="Access" value={activeProject.toolAccess} />
-            <Signal icon={<BarChart3 size={18} />} label="Audit" value={activeProject.auditLevel} />
-            <Signal icon={<Save size={18} />} label="Retain" value={`${activeProject.retentionDays}d`} />
+            <Signal icon={<Database size={18} />} label={t.dataClass} value={t.labels[activeProject.dataClass]} />
+            <Signal icon={<KeyRound size={18} />} label={t.toolAccess} value={t.labels[activeProject.toolAccess]} />
+            <Signal icon={<BarChart3 size={18} />} label={t.auditTrail} value={t.labels[activeProject.auditLevel]} />
+            <Signal icon={<Save size={18} />} label={t.retentionWindow} value={`${activeProject.retentionDays}${language === "zh" ? t.days : "d"}`} />
           </div>
 
           <div className="recommendation-list">
             <div className="section-heading compact">
               <div>
-                <p className="eyebrow">Recommendations</p>
-                <h2>Next controls</h2>
+                <p className="eyebrow">{t.recommendations}</p>
+                <h2>{t.nextControls}</h2>
               </div>
             </div>
             {recommendations.map((item) => (
@@ -647,17 +1068,17 @@ function App() {
           </div>
 
           <div className="notes-panel">
-            <p className="eyebrow">Review notes</p>
+            <p className="eyebrow">{t.reviewNotes}</p>
             <div className="note-input">
               <input
-                placeholder="Add a control note"
+                placeholder={t.addControlNote}
                 value={noteDraft}
                 onChange={(event) => setNoteDraft(event.target.value)}
                 onKeyDown={(event) => {
                   if (event.key === "Enter") addNote();
                 }}
               />
-              <button className="icon-button" onClick={addNote} title="Add note">
+              <button className="icon-button" onClick={addNote} title={t.addControlNote}>
                 <Plus size={16} />
               </button>
             </div>
@@ -693,21 +1114,26 @@ function useStoredProjects() {
 function MetricSlider({
   icon,
   label,
+  hint,
   value,
   max = 100,
   onChange,
 }: {
   icon: ReactNode;
   label: string;
+  hint: string;
   value: number;
   max?: number;
   onChange: (value: number) => void;
 }) {
   return (
     <label className="metric-card">
-      <span>
-        {icon}
-        {label}
+      <span className="metric-label">
+        <span>
+          {icon}
+          {label}
+        </span>
+        <small>{hint}</small>
       </span>
       <strong>{value}</strong>
       <input
@@ -731,7 +1157,7 @@ function SelectField({
   icon: ReactNode;
   label: string;
   value: string;
-  options: string[];
+  options: Array<{ value: string; label: string }>;
   onChange: (value: string) => void;
 }) {
   return (
@@ -742,8 +1168,8 @@ function SelectField({
       </span>
       <select value={value} onChange={(event) => onChange(event.target.value)}>
         {options.map((option) => (
-          <option key={option} value={option}>
-            {option}
+          <option key={option.value} value={option.value}>
+            {option.label}
           </option>
         ))}
       </select>
@@ -757,12 +1183,16 @@ function ToggleCard({
   description,
   checked,
   onChange,
+  onLabel,
+  offLabel,
 }: {
   icon: ReactNode;
   label: string;
   description: string;
   checked: boolean;
   onChange: (checked: boolean) => void;
+  onLabel: string;
+  offLabel: string;
 }) {
   return (
     <label className={`toggle-card ${checked ? "checked" : ""}`}>
@@ -776,7 +1206,7 @@ function ToggleCard({
         <strong>{label}</strong>
         <small>{description}</small>
       </span>
-      <em>{checked ? "On" : "Off"}</em>
+      <em>{checked ? onLabel : offLabel}</em>
     </label>
   );
 }

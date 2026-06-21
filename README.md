@@ -1,6 +1,10 @@
 # AgentGuard Lab
 
-AgentGuard Lab is a local-first launch-readiness console for AI agent workflows. It helps product, operations, security, and platform teams model autonomy, data exposure, tool access, approvals, audit depth, and fallback controls before an agent reaches production.
+AgentGuard Lab is a local-first launch decision console for AI agent workflows. It helps product, operations, security, and platform teams answer three concrete questions before an agent reaches production:
+
+- Can this agent enter a limited pilot?
+- Which risks block launch today?
+- What controls must be added next?
 
 The project targets a current mainstream need: teams are moving beyond simple AI chat interfaces into agentic workflows, but they still need practical governance, risk scoring, and review artifacts that do not require sending sensitive planning data to another service.
 
@@ -8,6 +12,8 @@ The project targets a current mainstream need: teams are moving beyond simple AI
 
 - Workflow templates for procurement, support triage, and finance close use cases.
 - Transparent risk score based on autonomy, data class, external actions, approval mode, audit level, injection exposure, and retention.
+- Visual risk-driver breakdown that explains why the score changed.
+- English and Chinese interface switching, stored locally.
 - Local persistence through `localStorage`; no backend or API key required.
 - Actionable governance recommendations for human gates, audit trails, retention, hostile input, and kill switches.
 - Markdown launch-review export for design reviews, compliance conversations, or GitHub issues.

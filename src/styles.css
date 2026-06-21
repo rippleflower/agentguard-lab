@@ -102,6 +102,10 @@ button:disabled {
   padding: 28px 28px 0;
 }
 
+.brand-row > div:nth-child(2) {
+  flex: 1;
+}
+
 .brand-mark,
 .row-icon,
 .icon-button,
@@ -193,7 +197,8 @@ h2 {
 .primary-action,
 .ghost-action,
 .compact-button,
-.reset-button {
+.reset-button,
+.language-button {
   border: 1px solid var(--line);
   min-height: 42px;
   display: inline-flex;
@@ -203,6 +208,12 @@ h2 {
   padding: 0 15px;
   color: var(--ink);
   background: rgba(244, 240, 232, 0.08);
+}
+
+.language-button {
+  min-width: 96px;
+  align-self: flex-start;
+  font: 700 0.78rem/1 "IBM Plex Mono", monospace;
 }
 
 .primary-action {
@@ -215,8 +226,40 @@ h2 {
 .ghost-action:hover,
 .compact-button:hover,
 .reset-button:hover,
-.icon-button:hover {
+.icon-button:hover,
+.language-button:hover {
   border-color: rgba(216, 255, 70, 0.65);
+}
+
+.purpose-card {
+  display: grid;
+  grid-template-columns: minmax(180px, 0.55fr) 1fr;
+  gap: 16px;
+  margin-top: 18px;
+  padding: 16px;
+  border: 1px solid rgba(216, 255, 70, 0.28);
+  background: rgba(8, 10, 7, 0.42);
+}
+
+.purpose-card strong {
+  display: block;
+  font-size: 1.1rem;
+}
+
+.purpose-card ul {
+  display: grid;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.purpose-card li {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 8px;
+  align-items: center;
+  color: var(--ink);
 }
 
 .radar-card {
@@ -462,6 +505,23 @@ h2 {
   font: 600 0.78rem/1.2 "IBM Plex Mono", monospace;
 }
 
+.metric-label {
+  display: grid !important;
+  gap: 6px;
+}
+
+.metric-label > span {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.metric-label small {
+  min-height: 34px;
+  color: var(--muted);
+  font: 500 0.76rem/1.35 Archivo, ui-sans-serif, system-ui, sans-serif;
+}
+
 input,
 textarea,
 select {
@@ -569,6 +629,60 @@ input[type="range"] {
 
 .score-block {
   padding: 16px;
+}
+
+.drivers-panel {
+  margin-top: 12px;
+  padding: 14px;
+  border: 1px solid var(--line);
+  background: rgba(244, 240, 232, 0.055);
+}
+
+.drivers-panel .section-heading {
+  align-items: flex-start;
+}
+
+.driver-list {
+  display: grid;
+  gap: 10px;
+  margin-top: 12px;
+}
+
+.driver {
+  display: grid;
+  gap: 8px;
+}
+
+.driver strong,
+.driver small {
+  display: block;
+}
+
+.driver small {
+  margin-top: 3px;
+  color: var(--muted);
+  font-size: 0.84rem;
+  line-height: 1.35;
+}
+
+.driver-track {
+  height: 9px;
+  overflow: hidden;
+  background: rgba(244, 240, 232, 0.09);
+}
+
+.driver-track i {
+  display: block;
+  height: 100%;
+  background: var(--mint);
+}
+
+.driver.warning .driver-track i {
+  background: var(--amber);
+}
+
+.driver.critical .driver-track i {
+  background: var(--red);
 }
 
 .score-header {
@@ -736,6 +850,14 @@ input[type="range"] {
 
   .brand-row {
     display: grid;
+  }
+
+  .language-button {
+    width: 100%;
+  }
+
+  .purpose-card {
+    grid-template-columns: 1fr;
   }
 
   .section-heading,
